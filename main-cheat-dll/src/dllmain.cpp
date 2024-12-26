@@ -18,17 +18,9 @@
 
 #if ENABLE_LOGGING
 template <typename... Args>
-void LOG(const std::string& fmt, Args&&... args)
+void LOG(const std::wstring& fmt, Args&&... args)
 {
-    try
-    {
-        auto str = std::vformat(fmt, std::make_format_args(std::forward<Args>(args)...));
-        std::cout << str;
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << "Formatting error: " << e.what() << '\n';
-    }
+    wprintf(fmt.c_str(), std::forward<Args>(args)...);
 }
 
 #else
@@ -73,12 +65,12 @@ DWORD WINAPI MainRoutine(LPVOID hModule)
 
     const auto clientDllBase{reinterpret_cast<uintptr_t>(GetModuleHandle(L"client.dll"))};
 
-    while (!(GetAsyncKeyState(VK_INSERT) & 0x1))
+    while (!(GetAsyncKeyState(VK_END) & 0x1))
     {
-        LOG(XOR("TEST {}"), "X");
+        LOG(XORW(L"TEST %s"), L"X");
 
 #ifndef NDEBUG
-        std::wcout << XORW(L"Base address: ") << std::hex << std::uppercase << hModule << XORW(L" press INS to exit\n");
+        std::wcout << XORW(L"Base address: ") << std::hex << std::uppercase << hModule << XORW(L" press END to exit\n");
 #endif
 
         Sleep(10);
