@@ -10,6 +10,8 @@
 #include <thread>
 #include <sstream>
 
+static_assert(sizeof(uintptr_t) == 8, "Expected 64-bit environment");
+
 #ifndef NDEBUG
 template <typename... Args>
 void LOG(const std::wstring& fmt, Args&&... args)
@@ -61,12 +63,9 @@ DWORD WINAPI MainRoutine(LPVOID hModule)
 
     while (!(GetAsyncKeyState(VK_END) & 0x1))
     {
-#ifndef NDEBUG
-        LOG(XORW(L"Base address: '%x' press END to exit\n"), hModule);
-#endif
+        LOG(XORW(L"Base address: '0x%llX' press END to exit\n"), reinterpret_cast<uint64_t>(hModule));
         Sleep(10);
     }
-
 
 #ifndef NDEBUG
     commons::console::destroyConsole();

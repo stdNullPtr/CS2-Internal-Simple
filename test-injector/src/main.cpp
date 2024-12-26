@@ -10,7 +10,7 @@
 DWORD GetTargetProcessIdFromProcessName(const std::wstring& procName);
 bool InjectDllLoadLibrary(const DWORD& processId, const std::wstring& dllFullPath);
 bool ManualMap(const DWORD& processId, const std::vector<char>& fileContents);
-std::vector<char> ReadFile(const std::wstring& filename);
+std::vector<char> ReadFile(const std::wstring& fullFilePath);
 
 template <typename... Pointers>
 void VirtualFreeExMultipleAndCloseHandle(const HANDLE& hProc, const Pointers&... pMem);
@@ -39,48 +39,47 @@ int wmain(int argc, wchar_t* argv[])
 {
     if (argc < 3 || argc > 4)
     {
-        wcerr << XORW(L"Usage: ") << argv[0] << XORW(L" <DLL file path> <Target process name> [manual map: true/false (optional, default: false)]\n");
-        wcerr << XORW(L"\nArguments:\n");
-        wcerr << XORW(L"  <DLL file path>          Path to the DLL you want to inject.\n");
-        wcerr << XORW(L"  <Target process name>    Name of the target process.\n");
-        wcerr << XORW(L"  [manual map]             Optional boolean flag (true/false) to indicate if manual mapping is required.\n");
-        wcerr << XORW(L"                           Defaults to false if not provided.\n");
+        wcerr << XORW(L"Usage: ") << argv[0] << XORW(L" <DLL file path> <Target process name> [manual map: true/false (optional, default: false)]\n")
+            << XORW(L"\nArguments:\n")
+            << XORW(L"  <DLL file path>          Path to the DLL you want to inject.\n")
+            << XORW(L"  <Target process name>    Name of the target process.\n")
+            << XORW(L"  [manual map]             Optional boolean flag (true/false) to indicate if manual mapping is required.\n")
+            << XORW(L"                           Defaults to false if not provided.\n");
         return EXIT_FAILURE;
     }
 
-    std::filesystem::path filePath{argv[1]};
-    if (!filePath.is_absolute())
+    std::filesystem::path argFilePath{argv[1]};
+    if (!argFilePath.is_absolute())
     {
-        filePath = absolute(filePath);
+        argFilePath = absolute(argFilePath);
     }
 
-    const std::wstring targetProcessName{argv[2]};
+    const std::wstring argTargetProcessName{argv[2]};
     bool manualMap{false};
 
     if (argc == 4)
     {
-        std::wstring manualMapArg{argv[3]};
-        std::ranges::transform(manualMapArg, manualMapArg.begin(), ::towlower);
-        manualMap = (manualMapArg == L"true" || manualMapArg == L"1");
+        std::wstring argIsManualMap{argv[3]};
+        std::ranges::transform(argIsManualMap, argIsManualMap.begin(), ::towlower);
+        manualMap = (argIsManualMap == L"true" || argIsManualMap == L"1");
     }
 
-    const std::ifstream file(filePath);
-    if (!file)
+    if (const std::ifstream file(argFilePath); !file)
     {
-        std::wcerr << XORW(L"File does not exist: ") << filePath << '\n';
+        std::wcerr << XORW(L"File does not exist: ") << argFilePath << '\n';
         return EXIT_FAILURE;
     }
 
-    wcout << XORW(L"File path: ") << filePath << '\n';
-    wcout << XORW(L"Target process: ") << targetProcessName << '\n';
+    wcout << XORW(L"File path: ") << argFilePath << '\n';
+    wcout << XORW(L"Target process: ") << argTargetProcessName << '\n';
     wcout << XORW(L"Will we manual map?: ") << (manualMap ? XORW(L"yes") : XORW(L"no")) << '\n';
 
-    const DWORD processId{GetTargetProcessIdFromProcessName(targetProcessName)};
+    const DWORD processId{GetTargetProcessIdFromProcessName(argTargetProcessName)};
     wcout << XORW(L"Process ID: ") << processId << '\n';
 
     if (manualMap)
     {
-        const auto fileContents{ReadFile(filePath)};
+        const auto fileContents{ReadFile(argFilePath)};
         if (fileContents.empty())
         {
             wcerr << XORW(L"Failed to read file contents.\n");
@@ -89,15 +88,15 @@ int wmain(int argc, wchar_t* argv[])
         if (!ManualMap(processId, fileContents))
         {
             wcerr << XORW(L"Manual mapping failed!\n");
-            return EXIT_SUCCESS;
+            return EXIT_FAILURE;
         }
     }
     else
     {
-        if (!InjectDllLoadLibrary(processId, filePath))
+        if (!InjectDllLoadLibrary(processId, argFilePath))
         {
             wcerr << XORW(L"Injection failed!\n");
-            return EXIT_SUCCESS;
+            return EXIT_FAILURE;
         }
     }
 
@@ -106,7 +105,7 @@ int wmain(int argc, wchar_t* argv[])
 
 bool ManualMap(const DWORD& processId, const std::vector<char>& fileContents)
 {
-#ifdef _DEBUG
+#ifndef NDEBUG
     wcerr << XORW(L"You cannot manual map in a debug build, the shellcode will contain non-portable instructions.\n");
     return false;
 #endif
@@ -392,8 +391,7 @@ bool InjectDllLoadLibrary(const DWORD& processId, const std::wstring& dllFullPat
     }
 
     const HANDLE hRemoteThread{
-        CreateRemoteThread(hProc, nullptr, NULL, (LPTHREAD_START_ROUTINE)loadLibrary, remoteStringAllocatedMem, NULL,
-                           nullptr)
+        CreateRemoteThread(hProc, nullptr, NULL, (LPTHREAD_START_ROUTINE)loadLibrary, remoteStringAllocatedMem, NULL, nullptr)
     };
     if (!hRemoteThread)
     {
@@ -447,13 +445,13 @@ DWORD GetTargetProcessIdFromProcessName(const std::wstring& procName)
     return NULL;
 }
 
-std::vector<char> ReadFile(const std::wstring& filename)
+std::vector<char> ReadFile(const std::wstring& fullFilePath)
 {
-    std::ifstream file(filename, std::ios::binary);
+    std::ifstream file(fullFilePath, std::ios::binary);
 
     if (!file)
     {
-        wcerr << XORW(L"Cannot open file: ") << filename << '\n';
+        wcerr << XORW(L"Cannot open file: ") << fullFilePath << '\n';
         return {};
     }
 
