@@ -67,12 +67,10 @@ DWORD WINAPI MainRoutine(LPVOID hModule)
 
     while (!(GetAsyncKeyState(VK_END) & 0x1))
     {
-        LOG(XORW(L"TEST %s"), L"X");
-
 #ifndef NDEBUG
+        LOG(XORW(L"TEST %s"), L"X");
         std::wcout << XORW(L"Base address: ") << std::hex << std::uppercase << hModule << XORW(L" press END to exit\n");
 #endif
-
         Sleep(10);
     }
 

@@ -136,14 +136,14 @@ bool ManualMap(const DWORD& processId, const std::vector<char>& fileContents)
     const auto* const pDosHeader{(PIMAGE_DOS_HEADER)pFileContents};
     if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE)
     {
-        wcerr << XORW(L"DOS header begins with an invalid WORD: ") << hexWStr(pDosHeader->e_magic) <<XORW(L" should be: ") << hexWStr(IMAGE_DOS_SIGNATURE) << '\n';
+        wcerr << XORW(L"DOS header begins with an invalid WORD: ") << hexWStr(pDosHeader->e_magic) << XORW(L" should be: ") << hexWStr(IMAGE_DOS_SIGNATURE) << '\n';
         return false;
     }
 
     const auto* const pPeHeaders{(PIMAGE_NT_HEADERS)(pFileContents + pDosHeader->e_lfanew)};
     if (pPeHeaders->Signature != IMAGE_NT_SIGNATURE)
     {
-        wcerr << XORW(L"PE header begins with an invalid LONG sig: ") << hexWStr(pPeHeaders->Signature) <<XORW(L" should be: ") << hexWStr(IMAGE_NT_SIGNATURE) << '\n';
+        wcerr << XORW(L"PE header begins with an invalid LONG sig: ") << hexWStr(pPeHeaders->Signature) << XORW(L" should be: ") << hexWStr(IMAGE_NT_SIGNATURE) << '\n';
         return false;
     }
 
@@ -203,7 +203,7 @@ bool ManualMap(const DWORD& processId, const std::vector<char>& fileContents)
                                     section.SizeOfRawData,
                                     nullptr))
             {
-                wcerr << XORW(L"WriteProcessMemory() failed writing section number: [") << i << XORW(L"] error:[") <<GetLastError() << XORW(L"] exiting...\n");
+                wcerr << XORW(L"WriteProcessMemory() failed writing section number: [") << i << XORW(L"] error:[") << GetLastError() << XORW(L"] exiting...\n");
                 VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase);
                 return false;
             }
@@ -272,14 +272,14 @@ bool ManualMap(const DWORD& processId, const std::vector<char>& fileContents)
         GetExitCodeProcess(hProc, &exitCode);
         if (exitCode != STILL_ACTIVE)
         {
-            wcerr << XORW(L"Process crashed, exit code: dec: ") << exitCode << XORW(L" hex: ") << hexWStr(exitCode) <<'\n';
+            wcerr << XORW(L"Process crashed, exit code: dec: ") << exitCode << XORW(L" hex: ") << hexWStr(exitCode) << '\n';
             return false;
         }
 
         MANUAL_MAPPING_DATA dataCheck;
         if (!ReadProcessMemory(hProc, pTargetMappingData, &dataCheck, sizeof MANUAL_MAPPING_DATA, nullptr))
         {
-            wcerr << XORW(L"ReadProcessMemory() for final check failed: [") << GetLastError() <<XORW(L"] exiting...\n");
+            wcerr << XORW(L"ReadProcessMemory() for final check failed: [") << GetLastError() << XORW(L"] exiting...\n");
             VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase, pTargetMappingData, pShellcode);
             return false;
         }
@@ -300,7 +300,7 @@ bool ManualMap(const DWORD& processId, const std::vector<char>& fileContents)
 
         if (dataCheck.dwCheck == (DWORD)0x10101010)
         {
-            wcout << XORW(L"Success, shellcode has completed, final check value: ") << hexWStr(dataCheck.dwCheck) <<'\n';
+            wcout << XORW(L"Success, shellcode has completed, final check value: ") << hexWStr(dataCheck.dwCheck) << '\n';
             break;
         }
 
@@ -328,13 +328,13 @@ bool ManualMap(const DWORD& processId, const std::vector<char>& fileContents)
             {
                 newProtection = PAGE_EXECUTE_READ;
             }
-            if (VirtualProtectEx(hProc, (BYTE*)pTargetBase + section.VirtualAddress, section.Misc.VirtualSize,newProtection, &oldProtection))
+            if (VirtualProtectEx(hProc, (BYTE*)pTargetBase + section.VirtualAddress, section.Misc.VirtualSize, newProtection, &oldProtection))
             {
                 std::cout << XOR("Section ") << std::string((char*)section.Name, 8) << XOR(" set as: ") << hexStr(newProtection) << '\n';
             }
             else
             {
-                std::cerr << XOR("FAIL: Section ") << std::string((char*)section.Name, 8) << XOR(" not set as: ") <<hexStr(newProtection) << '\n';
+                std::cerr << XOR("FAIL: Section ") << std::string((char*)section.Name, 8) << XOR(" not set as: ") << hexStr(newProtection) << '\n';
             }
         }
     }
