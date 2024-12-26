@@ -459,7 +459,7 @@ std::vector<char> ReadFile(const std::wstring& filename)
 
     // Seek to the end of the file to find its size
     file.seekg(0, std::ios::end);
-    const size_t size{(file.tellg())};
+    const size_t size{(size_t)file.tellg()};
     file.seekg(0, std::ios::beg);
 
     std::vector<char> buffer(size);
