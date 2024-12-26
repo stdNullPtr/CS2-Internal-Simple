@@ -31,6 +31,7 @@ BOOL WINAPI DllMain(HINSTANCE hModule, DWORD fdwReason, [[maybe_unused]] LPVOID 
     switch (fdwReason)
     {
     case DLL_PROCESS_ATTACH:
+        DisableThreadLibraryCalls(hModule);
         CreateThread(nullptr, NULL, MainRoutine, hModule, NULL, nullptr);
         break;
     case DLL_THREAD_ATTACH: break;
@@ -63,7 +64,8 @@ DWORD WINAPI MainRoutine(LPVOID hModule)
 
     while (!(GetAsyncKeyState(VK_END) & 0x1))
     {
-        LOG(XORW(L"Base address: '0x%llX' press END to exit\n"), reinterpret_cast<uint64_t>(hModule));
+        LOG(XORW(L"Base address: '0x%llX' press END to exit\n"), hModule);
+        LOG(XORW(L"client.dll: '0x%llX'\n"), clientDllBase);
         Sleep(10);
     }
 
@@ -71,6 +73,7 @@ DWORD WINAPI MainRoutine(LPVOID hModule)
     commons::console::destroyConsole();
 #endif
 
+    // *Comment is for manual mapping*
     // TODO: this is potentially bad since we definitely did not manually map in a perfect way like the Windows loader does, so we can't rely on it to unload
     // It definitely does not work currently and the bytes are left in memory.
     FreeLibraryAndExitThread(static_cast<HMODULE>(hModule), 0);

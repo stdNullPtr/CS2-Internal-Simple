@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src\dllmain.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\sdk\dumper\animationsystem_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\buttons.hpp" />
+    <ClInclude Include="src\sdk\dumper\client_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\engine2_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\host_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\interfaces.hpp" />
+    <ClInclude Include="src\sdk\dumper\materialsystem2_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\networksystem_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\offsets.hpp" />
+    <ClInclude Include="src\sdk\dumper\panorama_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\particles_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\pulse_system_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\rendersystemdx11_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\resourcesystem_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\scenesystem_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\schemasystem_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\server_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\soundsystem_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\vphysics2_dll.hpp" />
+    <ClInclude Include="src\sdk\dumper\worldrenderer_dll.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\sdk\dumper\info.json" />
+  </ItemGroup>
+</Project>

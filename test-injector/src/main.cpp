@@ -353,7 +353,7 @@ bool InjectDllLoadLibrary(const DWORD& processId, const std::wstring& dllFullPat
         return false;
     }
 
-    const LPVOID loadLibrary{(LPVOID)GetProcAddress(GetModuleHandle(XORW(L"kernel32.dll")), XOR("LoadLibraryW"))};
+    const LPVOID loadLibrary{(LPVOID)GetProcAddress(GetModuleHandle(XORW(L"KernelBase.dll")), XOR("LoadLibraryW"))};
     if (!loadLibrary)
     {
         wcerr << XORW(L"GetProcAddress() failed: ") << GetLastError() << '\n';
@@ -382,8 +382,7 @@ bool InjectDllLoadLibrary(const DWORD& processId, const std::wstring& dllFullPat
 
     wcout << XORW(L"Remote string allocated memory: ") << remoteStringAllocatedMem << '\n';
 
-    if (!WriteProcessMemory(hProc, remoteStringAllocatedMem, dllFullPath.c_str(), dllFullPath.size() * sizeof(wchar_t),
-                            nullptr))
+    if (!WriteProcessMemory(hProc, remoteStringAllocatedMem, dllFullPath.c_str(), dllFullPath.size() * sizeof(wchar_t), nullptr))
     {
         wcerr << XORW(L"WriteProcessMemory() failed: ") << GetLastError() << '\n';
         VirtualFreeExMultipleAndCloseHandle(hProc, remoteStringAllocatedMem);
