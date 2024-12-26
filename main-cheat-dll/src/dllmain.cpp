@@ -11,12 +11,6 @@
 #include <sstream>
 
 #ifndef NDEBUG
-#define ENABLE_LOGGING 1
-#else
-#define ENABLE_LOGGING 0
-#endif
-
-#if ENABLE_LOGGING
 template <typename... Args>
 void LOG(const std::wstring& fmt, Args&&... args)
 {
@@ -63,13 +57,12 @@ DWORD WINAPI MainRoutine(LPVOID hModule)
     commons::console::setCursorVisibility(false);
 #endif
 
-    const auto clientDllBase{reinterpret_cast<uintptr_t>(GetModuleHandle(L"client.dll"))};
+    const auto clientDllBase{reinterpret_cast<uintptr_t>(GetModuleHandle(XORW(L"client.dll")))};
 
     while (!(GetAsyncKeyState(VK_END) & 0x1))
     {
 #ifndef NDEBUG
-        LOG(XORW(L"TEST %s"), L"X");
-        std::wcout << XORW(L"Base address: ") << std::hex << std::uppercase << hModule << XORW(L" press END to exit\n");
+        LOG(XORW(L"Base address: '%x' press END to exit\n"), hModule);
 #endif
         Sleep(10);
     }
