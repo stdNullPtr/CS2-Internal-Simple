@@ -33,7 +33,7 @@ using std::wcout, std::wcerr;
  * If it is a 64-bit process, compile and run in 64bit:
  * https://stackoverflow.com/questions/9456228/createremotethread-returning-error-access-denied-windows-7-dll-injection
  ***/
-int main(int argc, wchar_t* argv[])
+int wmain(int argc, wchar_t* argv[])
 {
     if (argc < 3 || argc > 4)
     {
