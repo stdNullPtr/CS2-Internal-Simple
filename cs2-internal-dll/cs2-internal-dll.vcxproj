@@ -28,7 +28,7 @@
     <ClCompile Include="src\imgui\lib\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\controller\cs2_cheat_controller.h" />
+    <ClInclude Include="src\controller\cs2_cheat_controller.hpp" />
     <ClInclude Include="src\global.hpp" />
     <ClInclude Include="src\imgui\imgui_frame.hpp" />
     <ClInclude Include="src\imgui\lib\backends\imgui_impl_dx11.h" />
