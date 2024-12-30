@@ -41,7 +41,7 @@ namespace g
         static bool aim_assist{false};
         static bool aim_through_walls{false};
 
-        inline void reset_toggles()
+        inline void reset()
         {
             radar_hack = false;
             glow_hack = false;
