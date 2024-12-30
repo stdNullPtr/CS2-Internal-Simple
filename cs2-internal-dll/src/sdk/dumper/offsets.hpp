@@ -5,10 +5,13 @@
 
 #include <cstddef>
 
-namespace cs2_dumper {
-    namespace offsets {
+namespace cs2_dumper
+{
+    namespace offsets
+    {
         // Module: client.dll
-        namespace client_dll {
+        namespace client_dll
+        {
             constexpr std::ptrdiff_t dwCSGOInput = 0x1A89340;
             constexpr std::ptrdiff_t dwEntityList = 0x1A146E8;
             constexpr std::ptrdiff_t dwGameEntitySystem = 0x1B37E58;
@@ -27,8 +30,10 @@ namespace cs2_dumper {
             constexpr std::ptrdiff_t dwViewRender = 0x1A7FE20;
             constexpr std::ptrdiff_t dwWeaponC4 = 0x1A17928;
         }
+
         // Module: engine2.dll
-        namespace engine2_dll {
+        namespace engine2_dll
+        {
             constexpr std::ptrdiff_t dwBuildNumber = 0x532BE4;
             constexpr std::ptrdiff_t dwNetworkGameClient = 0x531CE0;
             constexpr std::ptrdiff_t dwNetworkGameClient_clientTickCount = 0x368;
@@ -41,17 +46,23 @@ namespace cs2_dumper {
             constexpr std::ptrdiff_t dwWindowHeight = 0x61514C;
             constexpr std::ptrdiff_t dwWindowWidth = 0x615148;
         }
+
         // Module: inputsystem.dll
-        namespace inputsystem_dll {
+        namespace inputsystem_dll
+        {
             constexpr std::ptrdiff_t dwInputSystem = 0x387E0;
         }
+
         // Module: matchmaking.dll
-        namespace matchmaking_dll {
+        namespace matchmaking_dll
+        {
             constexpr std::ptrdiff_t dwGameTypes = 0x1A41B0;
             constexpr std::ptrdiff_t dwGameTypes_mapName = 0x120;
         }
+
         // Module: soundsystem.dll
-        namespace soundsystem_dll {
+        namespace soundsystem_dll
+        {
             constexpr std::ptrdiff_t dwSoundSystem = 0x39D5E0;
             constexpr std::ptrdiff_t dwSoundSystem_engineViewData = 0x7C;
         }

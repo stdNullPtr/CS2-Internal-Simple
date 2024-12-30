@@ -9,75 +9,74 @@ namespace load_library_map
 {
     using std::wcout, std::wcerr;
 
-    inline bool InjectDllLoadLibrary(const DWORD& processId, const std::wstring& dllFullPath)
+    inline bool inject_dll_load_library(const DWORD& process_id, const std::wstring& dll_full_path)
     {
-        if (!processId)
+        if (!process_id)
         {
             wcerr << XORW(L"Process ID is null?\n");
             return false;
         }
 
-        const LPVOID loadLibrary{(LPVOID)GetProcAddress(GetModuleHandle(XORW(L"KernelBase.dll")), XOR("LoadLibraryW"))};
-        if (!loadLibrary)
+        const LPVOID load_library{(LPVOID)GetProcAddress(GetModuleHandle(XORW(L"KernelBase.dll")), XOR("LoadLibraryW"))};
+        if (!load_library)
         {
             wcerr << XORW(L"GetProcAddress() failed: ") << GetLastError() << '\n';
             return false;
         }
 
-        const HANDLE hProc{
+        const HANDLE h_proc{
             OpenProcess(
                 PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE |
-                PROCESS_VM_READ, FALSE, processId)
+                PROCESS_VM_READ, FALSE, process_id)
         };
-        if (!hProc)
+        if (!h_proc)
         {
             wcerr << XORW(L"OpenProcess() failed: ") << GetLastError() << '\n';
             return false;
         }
 
-        const LPVOID remoteStringAllocatedMem{
-            (VirtualAllocEx(hProc, nullptr, dllFullPath.length(), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE))
+        const LPVOID remote_string_allocated_mem{
+            (VirtualAllocEx(h_proc, nullptr, dll_full_path.length(), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE))
         };
-        if (!remoteStringAllocatedMem)
+        if (!remote_string_allocated_mem)
         {
             wcerr << XORW(L"VirtualAllocEx() failed: ") << GetLastError() << '\n';
             return false;
         }
 
-        wcout << XORW(L"Remote string allocated memory: ") << remoteStringAllocatedMem << '\n';
+        wcout << XORW(L"Remote string allocated memory: ") << remote_string_allocated_mem << '\n';
 
-        if (!WriteProcessMemory(hProc, remoteStringAllocatedMem, dllFullPath.c_str(), dllFullPath.size() * sizeof(wchar_t), nullptr))
+        if (!WriteProcessMemory(h_proc, remote_string_allocated_mem, dll_full_path.c_str(), dll_full_path.size() * sizeof(wchar_t), nullptr))
         {
             wcerr << XORW(L"WriteProcessMemory() failed: ") << GetLastError() << '\n';
-            VirtualFreeEx(hProc, remoteStringAllocatedMem, 0, MEM_RELEASE);
-            CloseHandle(hProc);
+            VirtualFreeEx(h_proc, remote_string_allocated_mem, 0, MEM_RELEASE);
+            CloseHandle(h_proc);
             return false;
         }
 
-        const HANDLE hRemoteThread{
-            CreateRemoteThread(hProc, nullptr, NULL, (LPTHREAD_START_ROUTINE)loadLibrary, remoteStringAllocatedMem, NULL, nullptr)
+        const HANDLE h_remote_thread{
+            CreateRemoteThread(h_proc, nullptr, NULL, (LPTHREAD_START_ROUTINE)load_library, remote_string_allocated_mem, NULL, nullptr)
         };
-        if (!hRemoteThread)
+        if (!h_remote_thread)
         {
             wcerr << XORW(L"CreateRemoteThread() failed: ") << GetLastError() << '\n';
-            VirtualFreeEx(hProc, remoteStringAllocatedMem, 0, MEM_RELEASE);
-            CloseHandle(hProc);
+            VirtualFreeEx(h_proc, remote_string_allocated_mem, 0, MEM_RELEASE);
+            CloseHandle(h_proc);
             return false;
         }
 
-        const DWORD waitResult{WaitForSingleObject(hRemoteThread, INFINITE)};
-        if (waitResult != WAIT_OBJECT_0)
+        if (const DWORD wait_result{WaitForSingleObject(h_remote_thread, INFINITE)}; wait_result != WAIT_OBJECT_0)
         {
             wcerr << XORW(L"WaitForSingleObject() failed: ") << GetLastError() << '\n';
         }
 
-        if (!CloseHandle(hRemoteThread))
+        if (!CloseHandle(h_remote_thread))
         {
             wcerr << XORW(L"CloseHandle(hRemoteThread) failed: ") << GetLastError() << '\n';
         }
 
-        VirtualFreeEx(hProc, remoteStringAllocatedMem, 0, MEM_RELEASE);
-        CloseHandle(hProc);
+        VirtualFreeEx(h_proc, remote_string_allocated_mem, 0, MEM_RELEASE);
+        CloseHandle(h_proc);
 
         return true;
     }

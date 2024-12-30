@@ -12,27 +12,27 @@ namespace manual_map
 
     namespace internal
     {
-        using f_LoadLibraryA = HINSTANCE(WINAPI*)(const char* lpLibFilename);
-        using f_GetProcAddress = FARPROC(WINAPI*)(HMODULE hModule, LPCSTR lpProcName);
-        using f_DllEntryPoint = BOOL(WINAPI*)(void* hDll, DWORD dwReason, void* pReserved);
+        using f_load_library_a = HINSTANCE(WINAPI*)(const char* lp_lib_filename);
+        using f_get_proc_address = FARPROC(WINAPI*)(HMODULE h_module, LPCSTR lp_proc_name);
+        using f_dll_entry_point = BOOL(WINAPI*)(void* h_dll, DWORD dw_reason, void* p_reserved);
 
-        struct MANUAL_MAPPING_DATA
+        struct manual_mapping_data
         {
-            f_LoadLibraryA pLoadLibraryA;
-            f_GetProcAddress pGetProcAddress;
-            BYTE* pbase;
-            DWORD dwCheck;
+            f_load_library_a p_load_library_a;
+            f_get_proc_address p_get_proc_address;
+            BYTE* p_base;
+            DWORD dw_check;
         };
     }
 
     template <typename... Pointers>
-    void VirtualFreeExMultipleAndCloseHandle(const HANDLE& hProc, const Pointers&... pMem)
+    void virtual_free_ex_multiple_and_close_handle(const HANDLE& h_proc, const Pointers&... p_mem)
     {
-        (..., VirtualFreeEx(hProc, pMem, 0, MEM_RELEASE));
-        CloseHandle(hProc);
+        (..., VirtualFreeEx(h_proc, p_mem, 0, MEM_RELEASE));
+        CloseHandle(h_proc);
     }
 
-    inline void __stdcall Shellcode(internal::MANUAL_MAPPING_DATA* pData)
+    inline void __stdcall shellcode(internal::manual_mapping_data* p_data)
     {
 #define RELOC_FLAG32(RelInfo) (((RelInfo) >> 0x0C) == IMAGE_REL_BASED_HIGHLOW)
 #define RELOC_FLAG64(RelInfo) (((RelInfo) >> 0x0C) == IMAGE_REL_BASED_DIR64)
@@ -43,169 +43,169 @@ namespace manual_map
 #define RELOC_FLAG RELOC_FLAG32
 #endif
 
-        if (!pData)
+        if (!p_data)
         {
             return;
         }
 
-        if (!pData->pGetProcAddress || !pData->pLoadLibraryA || !pData->pbase)
+        if (!p_data->p_get_proc_address || !p_data->p_load_library_a || !p_data->p_base)
         {
-            pData->dwCheck = (DWORD)0x40404040;
+            p_data->dw_check = (DWORD)0x40404040;
             return;
         }
 
-        BYTE* pBase{pData->pbase};
-        const IMAGE_DOS_HEADER* pDosHeader{(IMAGE_DOS_HEADER*)pBase};
-        const IMAGE_NT_HEADERS* pNtHeader{(IMAGE_NT_HEADERS*)(pBase + pDosHeader->e_lfanew)};
-        const IMAGE_OPTIONAL_HEADER64* pOptionalHeader{&pNtHeader->OptionalHeader};
+        BYTE* p_base{p_data->p_base};
+        const IMAGE_DOS_HEADER* p_dos_header{(IMAGE_DOS_HEADER*)p_base};
+        const IMAGE_NT_HEADERS* p_nt_header{(IMAGE_NT_HEADERS*)(p_base + p_dos_header->e_lfanew)};
+        const IMAGE_OPTIONAL_HEADER64* p_optional_header{&p_nt_header->OptionalHeader};
 
-        const internal::f_LoadLibraryA fLoadLibraryA{pData->pLoadLibraryA};
-        const internal::f_GetProcAddress fGetProcAddress{pData->pGetProcAddress};
+        const internal::f_load_library_a f_load_library_a{p_data->p_load_library_a};
+        const internal::f_get_proc_address f_get_proc_address{p_data->p_get_proc_address};
 
-        if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE)
+        if (p_dos_header->e_magic != IMAGE_DOS_SIGNATURE)
         {
-            pData->dwCheck = (DWORD)0x40404041;
+            p_data->dw_check = (DWORD)0x40404041;
             return;
         }
-        if (pNtHeader->Signature != IMAGE_NT_SIGNATURE)
+        if (p_nt_header->Signature != IMAGE_NT_SIGNATURE)
         {
-            pData->dwCheck = (DWORD)0x40404042;
+            p_data->dw_check = (DWORD)0x40404042;
             return;
         }
-        if (pNtHeader->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
+        if (p_nt_header->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
         {
-            pData->dwCheck = (DWORD)0x40404043;
+            p_data->dw_check = (DWORD)0x40404043;
             return;
         }
 
-        const auto fDllMain{(internal::f_DllEntryPoint)(pBase + pOptionalHeader->AddressOfEntryPoint)};
+        const auto f_dll_main{(internal::f_dll_entry_point)(p_base + p_optional_header->AddressOfEntryPoint)};
 
-        if (BYTE* locationDelta = pBase - pOptionalHeader->ImageBase)
+        if (BYTE* location_delta = p_base - p_optional_header->ImageBase)
         {
-            if (pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size)
+            if (p_optional_header->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size)
             {
-                auto* pRelocData{
-                    (IMAGE_BASE_RELOCATION*)(pBase + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].
+                auto* p_reloc_data{
+                    (IMAGE_BASE_RELOCATION*)(p_base + p_optional_header->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].
                         VirtualAddress)
                 };
-                const auto* pRelocEnd{
-                    (IMAGE_BASE_RELOCATION*)((uintptr_t)pRelocData + pOptionalHeader->DataDirectory[
+                const auto* p_reloc_end{
+                    (IMAGE_BASE_RELOCATION*)((uintptr_t)p_reloc_data + p_optional_header->DataDirectory[
                         IMAGE_DIRECTORY_ENTRY_BASERELOC].Size)
                 };
-                while (pRelocData < pRelocEnd && pRelocData->SizeOfBlock)
+                while (p_reloc_data < p_reloc_end && p_reloc_data->SizeOfBlock)
                 {
-                    const UINT numEntries{(UINT)((pRelocData->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD))};
-                    WORD* pRelativeInfo{(WORD*)(pRelocData + 1)};
+                    const UINT num_entries{(UINT)((p_reloc_data->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD))};
+                    WORD* p_relative_info{(WORD*)(p_reloc_data + 1)};
 
-                    for (UINT i{0}; i != numEntries; ++i, ++pRelativeInfo)
+                    for (UINT i{0}; i != num_entries; ++i, ++p_relative_info)
                     {
-                        if (RELOC_FLAG(*pRelativeInfo))
+                        if (RELOC_FLAG(*p_relative_info))
                         {
-                            UINT_PTR* pPatch{(UINT_PTR*)(pBase + pRelocData->VirtualAddress + ((*pRelativeInfo) & 0xFFF))};
-                            *pPatch += (UINT_PTR)locationDelta;
+                            UINT_PTR* p_patch{(UINT_PTR*)(p_base + p_reloc_data->VirtualAddress + ((*p_relative_info) & 0xFFF))};
+                            *p_patch += (UINT_PTR)location_delta;
                         }
                     }
-                    pRelocData = (IMAGE_BASE_RELOCATION*)((BYTE*)pRelocData + pRelocData->SizeOfBlock);
+                    p_reloc_data = (IMAGE_BASE_RELOCATION*)((BYTE*)p_reloc_data + p_reloc_data->SizeOfBlock);
                 }
             }
         }
 
-        if (pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size)
+        if (p_optional_header->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size)
         {
-            auto* pImportDescr{
-                (IMAGE_IMPORT_DESCRIPTOR*)(pBase + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].
+            auto* p_import_descriptor{
+                (IMAGE_IMPORT_DESCRIPTOR*)(p_base + p_optional_header->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].
                     VirtualAddress)
             };
-            while (pImportDescr->Name)
+            while (p_import_descriptor->Name)
             {
-                const char* name{(char*)(pBase + pImportDescr->Name)};
-                const HINSTANCE hDll{fLoadLibraryA(name)};
+                const char* name{(char*)(p_base + p_import_descriptor->Name)};
+                const HINSTANCE h_dll{f_load_library_a(name)};
 
-                ULONG_PTR* pThunkRef{(ULONG_PTR*)(pBase + pImportDescr->OriginalFirstThunk)};
-                ULONG_PTR* pFuncRef{(ULONG_PTR*)(pBase + pImportDescr->FirstThunk)};
+                ULONG_PTR* p_thunk_ref{(ULONG_PTR*)(p_base + p_import_descriptor->OriginalFirstThunk)};
+                ULONG_PTR* p_func_ref{(ULONG_PTR*)(p_base + p_import_descriptor->FirstThunk)};
 
-                if (!pThunkRef)
+                if (!p_thunk_ref)
                 {
-                    pThunkRef = pFuncRef;
+                    p_thunk_ref = p_func_ref;
                 }
 
-                for (; *pThunkRef; ++pThunkRef, ++pFuncRef)
+                for (; *p_thunk_ref; ++p_thunk_ref, ++p_func_ref)
                 {
-                    if (IMAGE_SNAP_BY_ORDINAL(*pThunkRef))
+                    if (IMAGE_SNAP_BY_ORDINAL(*p_thunk_ref))
                     {
-                        *pFuncRef = (ULONG_PTR)fGetProcAddress(hDll, (char*)(*pThunkRef & 0xFFFF));
+                        *p_func_ref = (ULONG_PTR)f_get_proc_address(h_dll, (char*)(*p_thunk_ref & 0xFFFF));
                     }
                     else
                     {
-                        const auto* pImport{(IMAGE_IMPORT_BY_NAME*)(pBase + *pThunkRef)};
-                        *pFuncRef = (ULONG_PTR)fGetProcAddress(hDll, pImport->Name);
+                        const auto* p_import{(IMAGE_IMPORT_BY_NAME*)(p_base + *p_thunk_ref)};
+                        *p_func_ref = (ULONG_PTR)f_get_proc_address(h_dll, p_import->Name);
                     }
                 }
-                ++pImportDescr;
+                ++p_import_descriptor;
             }
         }
 
-        if (pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].Size)
+        if (p_optional_header->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].Size)
         {
-            const auto* pTls{
-                (IMAGE_TLS_DIRECTORY*)(pBase + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress)
+            const auto* p_tls{
+                (IMAGE_TLS_DIRECTORY*)(p_base + p_optional_header->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress)
             };
-            const auto* pCallback{(PIMAGE_TLS_CALLBACK*)pTls->AddressOfCallBacks};
-            for (; pCallback && *pCallback; ++pCallback)
-                (*pCallback)(pBase, DLL_PROCESS_ATTACH, nullptr);
+            const auto* p_callback{(PIMAGE_TLS_CALLBACK*)p_tls->AddressOfCallBacks};
+            for (; p_callback && *p_callback; ++p_callback)
+                (*p_callback)(p_base, DLL_PROCESS_ATTACH, nullptr);
         }
 
         // TODO: can we use lpReserved to somehow monitor the thread from outside and wipe it with loader? We don't have a proper way to unload.
-        fDllMain(pBase, DLL_PROCESS_ATTACH, nullptr);
+        f_dll_main(p_base, DLL_PROCESS_ATTACH, nullptr);
 
-        pData->dwCheck = (DWORD)0x10101010;
+        p_data->dw_check = (DWORD)0x10101010;
     }
 
-    inline bool MapDll(const DWORD& processId, const std::vector<char>& fileContents)
+    inline bool map_dll(const DWORD& process_id, const std::vector<char>& file_contents)
     {
 #ifndef NDEBUG
         wcerr << XORW(L"You cannot manual map in a debug build, the shellcode will contain non-portable instructions.\n");
         return false;
 #endif
 
-        if (!processId)
+        if (!process_id)
         {
             wcerr << XORW(L"Process ID is null?\n");
             return false;
         }
 
-        const auto* const pFileContents{fileContents.data()};
+        const auto* const p_file_contents{file_contents.data()};
 
-        auto hexWStr = [](const auto& value)
+        auto hex_w_str = [](const auto& value)
         {
             std::wstringstream ss;
             ss << std::hex << XORW(L"0x") << std::uppercase << value;
             return ss.str();
         };
 
-        auto hexStr = [](const auto& value)
+        auto hex_str = [](const auto& value)
         {
             std::stringstream ss;
             ss << std::hex << XOR("0x") << std::uppercase << value;
             return ss.str();
         };
 
-        const auto* const pDosHeader{(PIMAGE_DOS_HEADER)pFileContents};
-        if (pDosHeader->e_magic != IMAGE_DOS_SIGNATURE)
+        const auto* const p_dos_header{(PIMAGE_DOS_HEADER)p_file_contents};
+        if (p_dos_header->e_magic != IMAGE_DOS_SIGNATURE)
         {
-            wcerr << XORW(L"DOS header begins with an invalid WORD: ") << hexWStr(pDosHeader->e_magic) << XORW(L" should be: ") << hexWStr(IMAGE_DOS_SIGNATURE) << '\n';
+            wcerr << XORW(L"DOS header begins with an invalid WORD: ") << hex_w_str(p_dos_header->e_magic) << XORW(L" should be: ") << hex_w_str(IMAGE_DOS_SIGNATURE) << '\n';
             return false;
         }
 
-        const auto* const pPeHeaders{(PIMAGE_NT_HEADERS)(pFileContents + pDosHeader->e_lfanew)};
-        if (pPeHeaders->Signature != IMAGE_NT_SIGNATURE)
+        const auto* const p_pe_headers{(PIMAGE_NT_HEADERS)(p_file_contents + p_dos_header->e_lfanew)};
+        if (p_pe_headers->Signature != IMAGE_NT_SIGNATURE)
         {
-            wcerr << XORW(L"PE header begins with an invalid LONG sig: ") << hexWStr(pPeHeaders->Signature) << XORW(L" should be: ") << hexWStr(IMAGE_NT_SIGNATURE) << '\n';
+            wcerr << XORW(L"PE header begins with an invalid LONG sig: ") << hex_w_str(p_pe_headers->Signature) << XORW(L" should be: ") << hex_w_str(IMAGE_NT_SIGNATURE) << '\n';
             return false;
         }
 
 #ifdef _WIN64
-        if (pPeHeaders->FileHeader.Machine != IMAGE_FILE_MACHINE_AMD64)
+        if (p_pe_headers->FileHeader.Machine != IMAGE_FILE_MACHINE_AMD64)
         {
             wcerr << XORW(L"Invalid target platform of the DLL, expected IMAGE_FILE_MACHINE_AMD64\n");
             return false;
@@ -218,187 +218,187 @@ namespace manual_map
         }
 #endif
 
-        const auto* const pSectionHeaders{IMAGE_FIRST_SECTION(pPeHeaders)};
+        const auto* const p_section_headers{IMAGE_FIRST_SECTION(p_pe_headers)};
 
-        const HANDLE hProc{OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, processId)};
-        if (!hProc)
+        const HANDLE h_proc{OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, process_id)};
+        if (!h_proc)
         {
             wcerr << XORW(L"OpenProcess() failed: ") << GetLastError() << '\n';
             return false;
         }
 
-        const LPVOID pTargetBase{
-            VirtualAllocEx(hProc,
+        const LPVOID p_target_base{
+            VirtualAllocEx(h_proc,
                            nullptr,
-                           pPeHeaders->OptionalHeader.SizeOfImage,
+                           p_pe_headers->OptionalHeader.SizeOfImage,
                            MEM_COMMIT | MEM_RESERVE,
                            PAGE_EXECUTE_READWRITE)
         };
 
-        if (!pTargetBase)
+        if (!p_target_base)
         {
             wcerr << XORW(L"VirtualAllocEx() failed: [") << GetLastError() << XORW(L"] exiting...\n");
-            CloseHandle(hProc);
+            CloseHandle(h_proc);
             return false;
         }
 
-        if (!WriteProcessMemory(hProc, pTargetBase, pFileContents, 0x1000, nullptr))
+        if (!WriteProcessMemory(h_proc, p_target_base, p_file_contents, 0x1000, nullptr))
         {
             wcerr << XORW(L"WriteProcessMemory() failed, can't write file header: [") << GetLastError() << XORW(L"] exiting...\n");
-            VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase);
+            virtual_free_ex_multiple_and_close_handle(h_proc, p_target_base);
             return false;
         }
 
-        for (auto i{0}; i < pPeHeaders->FileHeader.NumberOfSections; i++)
+        for (auto i{0}; i < p_pe_headers->FileHeader.NumberOfSections; i++)
         {
-            const IMAGE_SECTION_HEADER section{pSectionHeaders[i]};
+            const IMAGE_SECTION_HEADER section{p_section_headers[i]};
             if (section.PointerToRawData)
             {
-                if (!WriteProcessMemory(hProc,
-                                        (BYTE*)pTargetBase + section.VirtualAddress,
-                                        pFileContents + section.PointerToRawData,
+                if (!WriteProcessMemory(h_proc,
+                                        (BYTE*)p_target_base + section.VirtualAddress,
+                                        p_file_contents + section.PointerToRawData,
                                         section.SizeOfRawData,
                                         nullptr))
                 {
                     wcerr << XORW(L"WriteProcessMemory() failed writing section number: [") << i << XORW(L"] error:[") << GetLastError() << XORW(L"] exiting...\n");
-                    VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase);
+                    virtual_free_ex_multiple_and_close_handle(h_proc, p_target_base);
                     return false;
                 }
             }
         }
 
-        internal::MANUAL_MAPPING_DATA manualMapData;
-        manualMapData.pLoadLibraryA = LoadLibraryA;
-        manualMapData.pGetProcAddress = GetProcAddress;
-        manualMapData.pbase = (BYTE*)pTargetBase;
-        manualMapData.dwCheck = 0x0;
+        internal::manual_mapping_data manual_map_data;
+        manual_map_data.p_load_library_a = LoadLibraryA;
+        manual_map_data.p_get_proc_address = GetProcAddress;
+        manual_map_data.p_base = (BYTE*)p_target_base;
+        manual_map_data.dw_check = 0x0;
 
-        const LPVOID pTargetMappingData{
-            VirtualAllocEx(hProc, nullptr, sizeof(internal::MANUAL_MAPPING_DATA), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)
+        const LPVOID p_target_mapping_data{
+            VirtualAllocEx(h_proc, nullptr, sizeof(internal::manual_mapping_data), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)
         };
-        if (!pTargetMappingData)
+        if (!p_target_mapping_data)
         {
             wcerr << XORW(L"VirtualAllocEx() for target mapping data failed: [") << GetLastError() << XORW(L"] exiting...\n");
-            VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase);
+            virtual_free_ex_multiple_and_close_handle(h_proc, p_target_base);
             return false;
         }
 
-        if (!WriteProcessMemory(hProc, pTargetMappingData, &manualMapData, sizeof(internal::MANUAL_MAPPING_DATA), nullptr))
+        if (!WriteProcessMemory(h_proc, p_target_mapping_data, &manual_map_data, sizeof(internal::manual_mapping_data), nullptr))
         {
             wcerr << XORW(L"WriteProcessMemory() for target mapping data failed: [") << GetLastError() << XORW(L"] exiting...\n");
-            VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase, pTargetMappingData);
+            virtual_free_ex_multiple_and_close_handle(h_proc, p_target_base, p_target_mapping_data);
             return false;
         }
 
-        const LPVOID pShellcode{VirtualAllocEx(hProc, nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)};
-        if (!pShellcode)
+        const LPVOID p_shellcode{VirtualAllocEx(h_proc, nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)};
+        if (!p_shellcode)
         {
             wcerr << XORW(L"VirtualAllocEx() for shellcode failed: [") << GetLastError() << XORW(L"] exiting...\n");
-            VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase, pTargetMappingData);
+            virtual_free_ex_multiple_and_close_handle(h_proc, p_target_base, p_target_mapping_data);
             return false;
         }
 
-        wcout << XORW(L"My shellcode pointer: ") << hexWStr(Shellcode) << '\n';
-        wcout << XORW(L"Target shellcode: ") << hexWStr(pShellcode) << '\n';
-        wcout << XORW(L"Target data: ") << hexWStr(pTargetMappingData) << '\n';
-        wcout << XORW(L"Target base: ") << hexWStr(pTargetBase) << '\n';
+        wcout << XORW(L"My shellcode pointer: ") << hex_w_str(shellcode) << '\n';
+        wcout << XORW(L"Target shellcode: ") << hex_w_str(p_shellcode) << '\n';
+        wcout << XORW(L"Target data: ") << hex_w_str(p_target_mapping_data) << '\n';
+        wcout << XORW(L"Target base: ") << hex_w_str(p_target_base) << '\n';
 
-        if (!WriteProcessMemory(hProc, pShellcode, Shellcode, 0x1000, nullptr))
+        if (!WriteProcessMemory(h_proc, p_shellcode, shellcode, 0x1000, nullptr))
         {
             wcerr << XORW(L"WriteProcessMemory() for shellcode failed: [") << GetLastError() << XORW(L"] exiting...\n");
-            VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase, pTargetMappingData, pShellcode);
+            virtual_free_ex_multiple_and_close_handle(h_proc, p_target_base, p_target_mapping_data, p_shellcode);
             return false;
         }
 
-        const HANDLE hThread{
-            CreateRemoteThread(hProc, nullptr, 0, (LPTHREAD_START_ROUTINE)pShellcode, pTargetMappingData, 0, nullptr)
+        const HANDLE h_thread{
+            CreateRemoteThread(h_proc, nullptr, 0, (LPTHREAD_START_ROUTINE)p_shellcode, p_target_mapping_data, 0, nullptr)
         };
-        if (!hThread)
+        if (!h_thread)
         {
             wcerr << XORW(L"CreateRemoteThread() failed: [") << GetLastError() << XORW(L"] exiting...\n");
-            VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase, pTargetMappingData, pShellcode);
+            virtual_free_ex_multiple_and_close_handle(h_proc, p_target_base, p_target_mapping_data, p_shellcode);
             return false;
         }
-        CloseHandle(hThread);
+        CloseHandle(h_thread);
 
         wcout << XORW(L"Starting mapping validation...\n");
 
         while (true)
         {
-            DWORD exitCode{0};
-            GetExitCodeProcess(hProc, &exitCode);
-            if (exitCode != STILL_ACTIVE)
+            DWORD exit_code{0};
+            GetExitCodeProcess(h_proc, &exit_code);
+            if (exit_code != STILL_ACTIVE)
             {
-                wcerr << XORW(L"Process crashed, exit code: dec: ") << exitCode << XORW(L" hex: ") << hexWStr(exitCode) << '\n';
+                wcerr << XORW(L"Process crashed, exit code: dec: ") << exit_code << XORW(L" hex: ") << hex_w_str(exit_code) << '\n';
                 return false;
             }
 
-            internal::MANUAL_MAPPING_DATA dataCheck;
-            if (!ReadProcessMemory(hProc, pTargetMappingData, &dataCheck, sizeof internal::MANUAL_MAPPING_DATA, nullptr))
+            internal::manual_mapping_data data_check;
+            if (!ReadProcessMemory(h_proc, p_target_mapping_data, &data_check, sizeof internal::manual_mapping_data, nullptr))
             {
                 wcerr << XORW(L"ReadProcessMemory() for final check failed: [") << GetLastError() << XORW(L"] exiting...\n");
-                VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase, pTargetMappingData, pShellcode);
+                virtual_free_ex_multiple_and_close_handle(h_proc, p_target_base, p_target_mapping_data, p_shellcode);
                 return false;
             }
 
-            if (dataCheck.dwCheck == (DWORD)0x40404040)
+            if (data_check.dw_check == (DWORD)0x40404040)
             {
                 wcerr << XORW(L"Wrong/null function argument for the shellcode, exiting...\n");
-                VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase, pTargetMappingData, pShellcode);
+                virtual_free_ex_multiple_and_close_handle(h_proc, p_target_base, p_target_mapping_data, p_shellcode);
                 return false;
             }
 
-            if (dataCheck.dwCheck == (DWORD)0x40404041 || dataCheck.dwCheck == (DWORD)0x40404042 || dataCheck.dwCheck == (DWORD)0x40404043)
+            if (data_check.dw_check == (DWORD)0x40404041 || data_check.dw_check == (DWORD)0x40404042 || data_check.dw_check == (DWORD)0x40404043)
             {
-                wcerr << XORW(L"Fail in shellcode: ") << hexWStr(dataCheck.dwCheck) << '\n';
-                VirtualFreeExMultipleAndCloseHandle(hProc, pTargetBase, pTargetMappingData, pShellcode);
+                wcerr << XORW(L"Fail in shellcode: ") << hex_w_str(data_check.dw_check) << '\n';
+                virtual_free_ex_multiple_and_close_handle(h_proc, p_target_base, p_target_mapping_data, p_shellcode);
                 return false;
             }
 
-            if (dataCheck.dwCheck == (DWORD)0x10101010)
+            if (data_check.dw_check == (DWORD)0x10101010)
             {
-                wcout << XORW(L"Success, shellcode has completed, final check value: ") << hexWStr(dataCheck.dwCheck) << '\n';
+                wcout << XORW(L"Success, shellcode has completed, final check value: ") << hex_w_str(data_check.dw_check) << '\n';
                 break;
             }
 
-            wcout << XORW(L"Waiting for shellcode completion, current check: ") << hexWStr(dataCheck.dwCheck) << '\n';
+            wcout << XORW(L"Waiting for shellcode completion, current check: ") << hex_w_str(data_check.dw_check) << '\n';
             Sleep(500);
         }
 
         // wipe PE headers
-        const std::vector<uint8_t> emptyBuffer(0x1000, 0);
-        WriteProcessMemory(hProc, pTargetBase, emptyBuffer.data(), emptyBuffer.size(), nullptr);
+        const std::vector<uint8_t> empty_buffer(0x1000, 0);
+        WriteProcessMemory(h_proc, p_target_base, empty_buffer.data(), empty_buffer.size(), nullptr);
 
-        for (auto i{0}; i < pPeHeaders->FileHeader.NumberOfSections; i++)
+        for (auto i{0}; i < p_pe_headers->FileHeader.NumberOfSections; i++)
         {
-            const IMAGE_SECTION_HEADER section{pSectionHeaders[i]};
+            const IMAGE_SECTION_HEADER section{p_section_headers[i]};
             if (section.Misc.VirtualSize)
             {
-                DWORD oldProtection{0};
-                DWORD newProtection{PAGE_READONLY};
+                DWORD old_protection{0};
+                DWORD new_protection{PAGE_READONLY};
 
                 if ((section.Characteristics & IMAGE_SCN_MEM_WRITE) > 0)
                 {
-                    newProtection = PAGE_READWRITE;
+                    new_protection = PAGE_READWRITE;
                 }
                 else if ((section.Characteristics & IMAGE_SCN_MEM_EXECUTE) > 0)
                 {
-                    newProtection = PAGE_EXECUTE_READ;
+                    new_protection = PAGE_EXECUTE_READ;
                 }
-                if (VirtualProtectEx(hProc, (BYTE*)pTargetBase + section.VirtualAddress, section.Misc.VirtualSize, newProtection, &oldProtection))
+                if (VirtualProtectEx(h_proc, (BYTE*)p_target_base + section.VirtualAddress, section.Misc.VirtualSize, new_protection, &old_protection))
                 {
-                    std::cout << XOR("Section ") << std::string((char*)section.Name, 8) << XOR(" set as: ") << hexStr(newProtection) << '\n';
+                    std::cout << XOR("Section ") << std::string((char*)section.Name, 8) << XOR(" set as: ") << hex_str(new_protection) << '\n';
                 }
                 else
                 {
-                    std::cerr << XOR("FAIL: Section ") << std::string((char*)section.Name, 8) << XOR(" not set as: ") << hexStr(newProtection) << '\n';
+                    std::cerr << XOR("FAIL: Section ") << std::string((char*)section.Name, 8) << XOR(" not set as: ") << hex_str(new_protection) << '\n';
                 }
             }
         }
         DWORD old{0};
-        VirtualProtectEx(hProc, pTargetBase, pSectionHeaders->VirtualAddress, PAGE_READONLY, &old);
+        VirtualProtectEx(h_proc, p_target_base, p_section_headers->VirtualAddress, PAGE_READONLY, &old);
 
-        VirtualFreeExMultipleAndCloseHandle(hProc, pTargetMappingData, pShellcode);
+        virtual_free_ex_multiple_and_close_handle(h_proc, p_target_mapping_data, p_shellcode);
 
         return true;
     }

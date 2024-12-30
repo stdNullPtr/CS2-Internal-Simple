@@ -5,9 +5,11 @@
 
 #include <cstddef>
 
-namespace cs2_dumper {
+namespace cs2_dumper
+{
     // Module: client.dll
-    namespace buttons {
+    namespace buttons
+    {
         constexpr std::ptrdiff_t attack = 0x18614C0;
         constexpr std::ptrdiff_t attack2 = 0x1861550;
         constexpr std::ptrdiff_t back = 0x1861790;
