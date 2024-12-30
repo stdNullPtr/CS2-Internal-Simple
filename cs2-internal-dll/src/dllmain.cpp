@@ -2,11 +2,9 @@
 #include <windows.h>
 #ifndef NDEBUG
 #include "console.hpp"
-#include <string>
 #endif
 #include "xor.hpp"
 #include <thread>
-#include <sstream>
 #include "global.hpp"
 #include "logger.hpp"
 #include "keyboard.hpp"
@@ -27,7 +25,7 @@ namespace
         commons::console::set_cursor_visibility(false);
 #endif
 
-        cheat::cs2_cheat_controller cheat;
+        cheat::controller::cs2_cheat_controller cheat;
 
         log(XORW(L"[+] Base address: '0x%llX' press END to exit\n"), h_module);
 
@@ -53,9 +51,27 @@ namespace
                 continue;
             }
 
-            log(XORW(L"\n[F1] Pause\n"));
+            log(XORW(L"\n[F1] Pause\n\n"));
 
-            sleep_for(2s);
+            for (int i{1}; i < 64; i++)
+            {
+                const cheat::sdk::CCSPlayerController* const controller{cheat.get_entity_controller(i)};
+                if (!controller)
+                {
+                    continue;
+                }
+
+                const cheat::sdk::C_CSPlayerPawn* const pawn{cheat.get_entity_pawn(controller)};
+                if (!pawn)
+                {
+                    continue;
+                }
+
+                log(XOR("Name: %s\n"), controller->m_sSanitizedPlayerName);
+                log(XORW(L"HP: %d\n"), pawn->m_iHealth);
+            }
+
+            sleep_for(10ms);
         }
 
 #ifndef NDEBUG
@@ -66,18 +82,6 @@ namespace
         // TODO: this is potentially bad since we definitely did not manually map in a perfect way like the Windows loader does, so we can't rely on it to unload
         // It definitely does not work currently and the bytes are left in memory.
         FreeLibraryAndExitThread(static_cast<HMODULE>(h_module), 0);
-    }
-
-    void handle_error(const std::wstring& msg)
-    {
-        std::wostringstream s;
-        s << msg << XORW(L"\nError code: ") << GetLastError();
-
-#ifndef NDEBUG
-        log(s.str());
-#else
-    MessageBox(NULL, s.str().c_str(), XORW(L"Error"), MB_OK);
-#endif
     }
 }
 

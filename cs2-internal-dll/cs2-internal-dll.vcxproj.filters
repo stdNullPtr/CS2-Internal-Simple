@@ -8,6 +8,7 @@
     <ClCompile Include="src\imgui\lib\imgui_draw.cpp" />
     <ClCompile Include="src\imgui\lib\imgui_tables.cpp" />
     <ClCompile Include="src\imgui\lib\imgui_widgets.cpp" />
+    <ClCompile Include="src\controller\cs2_cheat_controller.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\sdk\dumper\animationsystem_dll.hpp" />
@@ -41,6 +42,11 @@
     <ClInclude Include="src\imgui\lib\imstb_truetype.h" />
     <ClInclude Include="src\imgui\imgui_frame.hpp" />
     <ClInclude Include="src\controller\cs2_cheat_controller.hpp" />
+    <ClInclude Include="src\sdk\structs.hpp" />
+    <ClInclude Include="src\util\bone_matrix.hpp" />
+    <ClInclude Include="src\util\vec2.hpp" />
+    <ClInclude Include="src\util\vec3.hpp" />
+    <ClInclude Include="src\util\view_matrix.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\sdk\dumper\info.json" />
