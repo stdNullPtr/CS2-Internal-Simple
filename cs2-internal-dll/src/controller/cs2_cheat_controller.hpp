@@ -14,7 +14,6 @@ namespace cheat
     {
         uintptr_t client_dll_base_{0x0};
         uintptr_t engine_dll_base_{0x0};
-        uintptr_t network_game_client_base_{0x0};
         bool ready_{false};
 
     private:
@@ -38,17 +37,17 @@ namespace cheat
             return result;
         }
 
-        [[nodiscard]] uintptr_t get_network_game_client_base() const
+        [[nodiscard]] uintptr_t* get_p_network_game_client() const
         {
             if (!engine_dll_base_)
             {
                 log(XORW(L"[-] Can't get network game client because engine dll is 0x0!\n"));
             }
 
-            const auto result{*(uintptr_t*)(engine_dll_base_ + cs2_dumper::offsets::engine2_dll::dwNetworkGameClient)};
+            auto* const result{(uintptr_t*)(engine_dll_base_ + cs2_dumper::offsets::engine2_dll::dwNetworkGameClient)};
             if (!result)
             {
-                log(XORW(L"[-] network game client is 0x0!\n"));
+                log(XORW(L"[-] network game client is null!\n"));
             }
             return result;
         }
@@ -61,8 +60,15 @@ namespace cheat
 
         [[nodiscard]] bool is_in_game() const
         {
-            const auto is_background{*(bool*)(network_game_client_base_ + cs2_dumper::offsets::engine2_dll::dwNetworkGameClient_isBackgroundMap)};
-            const auto sign_on_state{*(int*)(network_game_client_base_ + cs2_dumper::offsets::engine2_dll::dwNetworkGameClient_signOnState)};
+            const auto* const p_network_game_client{ get_p_network_game_client() };
+            if (!p_network_game_client)
+            {
+                log(XORW(L"[-] Can't check is_in_game - network game client is null!\n"));
+                return false;
+            }
+
+            const auto is_background{*(bool*)(*p_network_game_client + cs2_dumper::offsets::engine2_dll::dwNetworkGameClient_isBackgroundMap)};
+            const auto sign_on_state{*(int*)(*p_network_game_client + cs2_dumper::offsets::engine2_dll::dwNetworkGameClient_signOnState)};
             return !is_background && sign_on_state >= 6;
         }
 
@@ -72,12 +78,6 @@ namespace cheat
 
             result &= (client_dll_base_ = get_client_dll_base()) != 0x0;
             result &= (engine_dll_base_ = get_engine_dll_base()) != 0x0;
-
-            // If we found client dll and engine dll, continue with init
-            if (result)
-            {
-                result &= (network_game_client_base_ = get_network_game_client_base()) != 0x0;
-            }
 
             return ready_ = result;
         }

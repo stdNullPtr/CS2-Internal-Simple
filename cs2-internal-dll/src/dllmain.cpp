@@ -10,8 +10,7 @@
 #include "global.hpp"
 #include "logger.hpp"
 #include "keyboard.hpp"
-#include "controller/cs2_cheat_controller.h"
-#include "sdk/dumper/offsets.hpp"
+#include "controller/cs2_cheat_controller.hpp"
 
 static_assert(sizeof(uintptr_t) == 8, "Expected 64-bit environment");
 
