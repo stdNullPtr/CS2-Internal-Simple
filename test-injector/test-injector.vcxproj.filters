@@ -3,4 +3,8 @@
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\dll-mappers\map_manual.hpp" />
+    <ClInclude Include="src\dll-mappers\map_load_library.hpp" />
+  </ItemGroup>
 </Project>

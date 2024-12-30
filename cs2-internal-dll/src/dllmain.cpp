@@ -2,42 +2,29 @@
 #include <windows.h>
 #ifndef NDEBUG
 #include "console.hpp"
-#include <iostream>
 #include <format>
 #include <string>
 #endif
 #include "xor.hpp"
 #include <thread>
 #include <sstream>
+#include "logger.hpp"
 
 static_assert(sizeof(uintptr_t) == 8, "Expected 64-bit environment");
 
-#ifndef NDEBUG
-template <typename... Args>
-void LOG(const std::wstring& fmt, Args&&... args)
-{
-    wprintf(fmt.c_str(), std::forward<Args>(args)...);
-}
-
-#else
-#define LOG(...)
-#endif
+using commons::logger::LOG;
 
 void HandleError(const std::wstring& msg);
 DWORD WINAPI MainRoutine(LPVOID hModule);
 
 BOOL WINAPI DllMain(HINSTANCE hModule, DWORD fdwReason, [[maybe_unused]] LPVOID lpReserved)
 {
-    switch (fdwReason)
+    if (fdwReason == DLL_PROCESS_ATTACH)
     {
-    case DLL_PROCESS_ATTACH:
         DisableThreadLibraryCalls(hModule);
-        CreateThread(nullptr, NULL, MainRoutine, hModule, NULL, nullptr);
-        break;
-    case DLL_THREAD_ATTACH: break;
-    case DLL_THREAD_DETACH: break;
-    case DLL_PROCESS_DETACH: break;
+        CloseHandle(CreateThread(nullptr, NULL, MainRoutine, hModule, NULL, nullptr));
     }
+
     return TRUE;
 }
 
@@ -47,7 +34,7 @@ void HandleError(const std::wstring& msg)
     s << msg << XORW(L"\nError code: ") << GetLastError();
 
 #ifndef NDEBUG
-    std::wcout << s.str();
+    LOG(s.str());
 #else
     MessageBox(NULL, s.str().c_str(), XORW(L"Error"), MB_OK);
 #endif
@@ -66,6 +53,14 @@ DWORD WINAPI MainRoutine(LPVOID hModule)
     {
         LOG(XORW(L"Base address: '0x%llX' press END to exit\n"), hModule);
         LOG(XORW(L"client.dll: '0x%llX'\n"), clientDllBase);
+
+        if (!clientDllBase)
+        {
+            LOG(XORW(L"client.dll not found, will exit in 5 secs\n"));
+            Sleep(5 * 1000);
+            break;
+        }
+
         Sleep(10);
     }
 
