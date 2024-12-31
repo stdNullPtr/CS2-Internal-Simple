@@ -5,6 +5,9 @@
 #include "lib/backends/imgui_impl_win32.h"
 #include "lib/backends/imgui_impl_dx11.h"
 
+// Forward declare message handler from imgui_impl_win32.cpp
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 namespace cheat::imgui
 {
     namespace g
@@ -19,13 +22,12 @@ namespace cheat::imgui
 
         static inline WNDCLASSEXW overlay_wnd_class;
         static inline HWND h_overlay;
-        constexpr auto overlay_window_name{XORW(L"zzxzz")};
-        constexpr auto font_size{20.0f};
+        constexpr auto overlay_window_name{L"zzxzz"};
     }
 
     LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-    bool create_device_d_3d(HWND hWnd);
-    void cleanup_device_d_3d();
+    bool create_device_d3d(HWND hWnd);
+    void cleanup_device_d3d();
     void create_render_target();
     void cleanup_render_target();
 
@@ -64,9 +66,9 @@ namespace cheat::imgui
         SetLayeredWindowAttributes(g::h_overlay, RGB(0, 0, 0), 255, LWA_ALPHA | LWA_COLORKEY);
 
         // Initialize Direct3D
-        if (!create_device_d_3d(g::h_overlay))
+        if (!create_device_d3d(g::h_overlay))
         {
-            cleanup_device_d_3d();
+            cleanup_device_d3d();
             UnregisterClassW(g::overlay_wnd_class.lpszClassName, g::overlay_wnd_class.hInstance);
             return;
         }
@@ -103,7 +105,7 @@ namespace cheat::imgui
             ImGui_ImplWin32_Shutdown();
             ImGui::DestroyContext();
 
-            cleanup_device_d_3d();
+            cleanup_device_d3d();
             DestroyWindow(g::h_overlay);
             UnregisterClassW(g::overlay_wnd_class.lpszClassName, g::overlay_wnd_class.hInstance);
         }
@@ -153,7 +155,7 @@ namespace cheat::imgui
     }
 
 #pragma region imgui_helpers
-    inline bool create_device_d_3d(HWND hWnd)
+    inline bool create_device_d3d(HWND hWnd)
     {
         // Setup swap chain
         DXGI_SWAP_CHAIN_DESC sd;
@@ -186,7 +188,7 @@ namespace cheat::imgui
         return true;
     }
 
-    inline void cleanup_device_d_3d()
+    inline void cleanup_device_d3d()
     {
         cleanup_render_target();
         if (g::g_p_swap_chain)
@@ -222,9 +224,6 @@ namespace cheat::imgui
             g::g_main_render_target_view = nullptr;
         }
     }
-
-    // Forward declare message handler from imgui_impl_win32.cpp
-    extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     // Win32 message handler
     // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
